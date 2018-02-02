@@ -55,15 +55,13 @@
  */
 
 
-
-
-
-unsigned int tick_count;
-unsigned int yourtime1=0;
-unsigned int yourtime2=0;
+unsigned volatile int  tick_count;
+unsigned  int yourtime1=0;
+unsigned  int yourtime2=0;
 int buttonpress=0;
 int flag1=0;
 int flag2=0;
+int interval=0;
 
 //void interrupt TMR0_ISR(){
 //    TMR0IF=0;
@@ -78,7 +76,6 @@ int flag2=0;
 
 void main(void)
 {
-    
     // initialize the device
     SYSTEM_Initialize();
     InitUSART();
@@ -97,124 +94,26 @@ void main(void)
 
     // Disable the Peripheral Interrupts
     //INTERRUPT_PeripheralInterruptDisable();
-   
-    
-    
-    
-    
-    
-    
-   
-        
-        //break;
-//        for(p=0; p<100000; p++);
-//        p++;
-        
-        
-   // printf("\tTicking is: %d\r\n",tick_count);
-    
-   
-//    if(TMR0_InterruptHandler)
-//    {
-//        tick_count = tick_count++;
-//        printf("\t it Tickied is: %d\r\n",tick_count);
-//    }
 
-
-//    if (TMR0IE && TMR0IF) //are TMR0 interrupts enabled and
-//            //is the TMR0 interrupt flag set?
-//    {
-//        TMR0IF=0; //TMR0 interrupt flag must be
-//            //cleared in software
-//            //to allow subsequent interrupts
-//        ++tick_count; //increment the counter variable
-//            //by 1
-//    }
-
-    printf("Trip time measurement project\r\nWelcome to my Project Demonstration :)");
+    printf("READY\r\n");
     
-    while(1){
-        //TxChar(65);
-        //printf("%d",tick_count);
-//        if(tick_count%1000==0)
-//        {
-//            printf("1 second");
-//        }
-//        __delay_ms(6000);
-//         IO_RC1_SetHigh();
-        
-//        printf("\r \n %d",buttonpress);
-        //__delay_ms(1000);
-        //IO_RC1_SetLow();
-//        printf("\r \n %d",buttonpress);
-        
-        
-        if(flag1){
-            
-            //while(flag2<1){
-            //no nothing until trip
-                //flag1=0;
-                if(tick_count%2000==0){
-                    printf("null trip time");
-                    flag2=flag2+2;
-                }
-            //}
-            if(flag2){
-            yourtime2=tick_count;
-            printf("Trip time = %d \n\r",yourtime2-yourtime1);
-            
-            //__delay_ms(5000);
-            IO_RC1_SetLow();
-            tick_count=0;
-            flag1=0;
-            flag2=0;
-            INTCONbits.IOCIF=0;
-            INTCONbits.INTF=0;
-            INTCONbits.INTE=1;
-            INTCONbits.IOCIE=1;
-            yourtime2=0;
-            yourtime1=0;
-            
+    while(1)
+    {
+        if(flag1)
+        {
+                flag1=0;
+                
+                INTCONbits.IOCIE =0; //disable interrupt
+                while(!flag2){} //wait for second interrupt
+                interval= yourtime2-yourtime1;
+                printf("time  1: %i ....", yourtime1);
+                printf("time  2: %i .... ", yourtime2);
+                printf("\r\nthe trip time is: %i",yourtime2-yourtime1);
+                flag2=0;
+                tick_count =0;
+                INTCONbits.IOCIE =1;
         }
-        }
-        
-        
-        
-       
-//        if(flag1&&flag2){
-//            printf("Trip time = %d",yourtime2-yourtime1);
-//            __delay_ms(1000);
-//            flag1=0;
-//            flag2=0;
-//            INTCONbits.INTE = 1;
-//            INTCONbits.IOCIE=1;
-//        }
-        
-    }
-    
-    
-    
-    //TXREG=0;
-            
-            //putch('b');
-            //printf("ok please work \n");
-//        if(p<5){
-//            if(TXIF==1){
-//                
-//                EUSART_Write(p);
-//                
-//                
-//                TXIE=0;
-//                
-//            
-//            p++;
-//        }
-//            
-//            
-//            
-//        // Add your application code
-//        }
-    
+    }  
 }
 
 
@@ -223,73 +122,29 @@ void main(void)
 
 void interrupt INTERRUPT_InterruptManager (void)
 {
-    if(TMR0IF){
+    if(TMR0IF)
+    {
         TMR0IF=0;
         tick_count++;
-        if(tick_count>10000000)
-        {
-            tick_count=0;
-        }
-    
+    }
     if(INTCONbits.IOCIE == 1 && INTCONbits.IOCIF == 1)
     {
-        yourtime1=tick_count;
-        //flag1=1;
-        ++buttonpress;
+        yourtime1 = tick_count;
+        flag1=1;
+        buttonpress++;
         PIN_MANAGER_IOC();
-        
-        
-        //printf("\r\n relay closed");
         INTCONbits.IOCIF =0;
-        //INTCONbits.IOCIE=0;
-        
-        
-
     }
-    if(flag1==1 &&INTCONbits.INTE ==1 && INTCONbits.INTF == 1)
+    if(INTCONbits.INTE ==1 && INTCONbits.INTF == 1)
     {
-       //flag2++;
-       INT_ISR();
-       //__delay_ms(100);
-       printf("unit trip");
-       INTCONbits.INTF=0;
-       //INTCONbits.INTE = 0;
-       //flag2=1;
-       
+        yourtime2 = tick_count;
+        flag2=1;
+        INT_ISR();
+        INTCONbits.INTF=0;
     }
-      
-       
-    
-    
-    }
-    
-    
-    
-    // interrupt handler
- 
-    
-  
 }
+//}
 /**
  End of File
 */
 
-//#include "interrupt_manager.h"
-//#include "mcc.h"
-//
-//void interrupt INTERRUPT_InterruptManager (void)
-//{
-//    // interrupt handler
-//    if(INTCONbits.INTE == 1 && INTCONbits.INTF == 1)
-//    {
-//        INT_ISR();
-//    }
-//    else if(INTCONbits.IOCIE == 1 && INTCONbits.IOCIF == 1)
-//    {
-//        PIN_MANAGER_IOC();
-//    }
-//    else
-//    {
-//        //Unhandled Interrupt
-//    }
-//}
