@@ -21,7 +21,7 @@
 
 /* 
  * File:   
- * Author: 
+ * Author: Kieran Kilgannon
  * Comments:
  * Revision history: 
  */
