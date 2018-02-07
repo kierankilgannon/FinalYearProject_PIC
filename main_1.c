@@ -49,8 +49,8 @@
 
 
 unsigned volatile int  tick_count;
-unsigned  volatile int yourtime1=0;
-unsigned  volatile int yourtime2=0;
+unsigned volatile int yourtime1=0;
+unsigned volatile int yourtime2=0;
 int buttonpress=0;
 int flag1=0;
 int flag2=0;
@@ -91,18 +91,21 @@ void main(void)
     {
         if(flag1)
         {
-                flag1=0;
-                
+                flag1=0;   
                 INTCONbits.IOCIE =0; //disable interrupt
                 while(!flag2){} //wait for second interrupt
                 interval= yourtime2-yourtime1;
                 printf("time  1: %i ....", yourtime1);
                 printf("time  2: %i .... ", yourtime2);
-                printf("\r\nthe trip time is: %i",yourtime2-yourtime1);
+                printf("\r\nthe trip time is: %i",(yourtime2-yourtime1));
                 flag2=0;
                 tick_count =0;
                 INTCONbits.IOCIE =1;
         }
+//        if(tick_count%1000==0){
+//            printf("ping\r\n");
+//        }
+            
     }  
 }
 
@@ -121,8 +124,11 @@ void interrupt INTERRUPT_InterruptManager (void)
 {
     if(TMR0IF)
     {
-        TMR0IF=0;
         tick_count++;
+        TMR0=144;
+        TMR0IF=0;
+        
+        
     }
     if(INTCONbits.IOCIE == 1 && INTCONbits.IOCIF == 1)
     {
