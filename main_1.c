@@ -36,33 +36,29 @@
     TERMS.
 */
 
+#include <pic16f1824.h>
+
 #include "mcc_generated_files/mcc.h"
 #include "stdio.h"
 #include "Usart.h"
 #include "Timers.h"
+#include "stdlib.h"
 //#include "interrupt_manager.h"
 
-
-/*
-                         Main application
- */
-
-
-unsigned volatile int  tick_count;
+unsigned volatile int tick_count;
 unsigned volatile int yourtime1=0;
 unsigned volatile int yourtime2=0;
 int buttonpress=0;
 int flag1=0;
 int flag2=0;
-int interval=0;
+unsigned int interval = 0;
+int x=0;
 
-void interrupt INTERRUPT_InterruptManager(void);
-void interrupt TMR0_MyISR(void);
+void interrupt InterruptServiceRoutine(void);
+//void interrupt TMR0_MyISR(void);
         
     // add your TMR0 interrupt custom code
     // or set custom function using TMR0_SetInterruptHandler()
-
-
 
 void main(void)
 {
@@ -70,14 +66,14 @@ void main(void)
     SYSTEM_Initialize();
     InitUSART();
     InitialiseTimers();
-    // When using interrupts, you need to set the Global and Peripheral Interrupt Enable bits
-    // Use the following macros to:
 
     // Enable the Global Interrupts
-    INTERRUPT_GlobalInterruptEnable();
+    //INTERRUPT_GlobalInterruptEnable();
+    INTCONbits.GIE = 1;
 
     // Enable the Peripheral Interrupts
-    INTERRUPT_PeripheralInterruptEnable();
+    //INTERRUPT_PeripheralInterruptEnable();
+    INTCONbits.PEIE = 1;
 
     // Disable the Global Interrupts
     //INTERRUPT_GlobalInterruptDisable();
@@ -86,62 +82,87 @@ void main(void)
     //INTERRUPT_PeripheralInterruptDisable();
 
     printf("READY\r\n");
-    
+    //INTCONbits.INTE =0;
     while(1)
     {
-        if(flag1)
-        {
-                flag1=0;   
-                INTCONbits.IOCIE =0; //disable interrupt
-                while(!flag2){} //wait for second interrupt
-                interval= yourtime2-yourtime1;
-                printf("time  1: %i ....", yourtime1);
-                printf("time  2: %i .... ", yourtime2);
-                printf("\r\nthe trip time is: %i",(yourtime2-yourtime1));
-                flag2=0;
-                tick_count =0;
-                INTCONbits.IOCIE =1;
-        }
-//        if(tick_count%1000==0){
-//            printf("ping\r\n");
+//        if(buttonpress)
+//        {
+//            printf("%i", buttonpress);
+//            buttonpress = 0;
 //        }
-            
+        if(flag1==1)
+        { 
+            while(flag2==0){} //wait for second interrupt !flag2
+            //printf("time  1: %i ",yourtime1);
+            //printf("time  2: %i ",yourtime2);
+            __delay_ms(100);
+            interval = yourtime2 - yourtime1;
+            printf("\r\n TRIPTIME: %i",(yourtime2-yourtime1));
+            printf("Reg is: %i .... ", x);
+            __delay_ms(1000);
+            flag1 = 0;
+            flag2 = 0;
+            //tick_count =0;
+            //__delay_ms(5000);
+//            INTCONbits.IOCIE = 1;
+//            INTCONbits.INTE = 1;
+//             
+        }   
     }  
 }
 
 
-
-//void interrupt TMR0_MyISR (void)
-//{
-//    if(TMR0IF)
-//    {
-//        TMR0IF=0;
-//        tick_count++;
-//    }
-//}
-
-void interrupt INTERRUPT_InterruptManager (void)
+void interrupt InterruptServiceRoutine(void)
 {
     if(TMR0IF)
     {
         tick_count++;
-        TMR0=144;
+        //TMR0=117;
         TMR0IF=0;
-        
-        
     }
-    if(INTCONbits.IOCIE == 1 && INTCONbits.IOCIF == 1)
+//    if(INTCONbits.IOCIE == 1 && INTCONbits.IOCIF == 1)
+//    {
+//        yourtime1 = tick_count;
+//        printf("interrupt");
+//        //tick_count = 0;
+//        //flag1=1;
+//        PIN_MANAGER_IOC();
+//        //IOCAFbits.IOCAF4 = 0;
+//        INTCONbits.IOCIF = 0;
+//        //flag1=0;   
+//        //INTCONbits.IOCIE = 0; //disable interrupt
+//        //printf("pressed");
+//        buttonpress++;
+//    }
+//    if(IOCAFbits.IOCAF4 == 1 )
+//    {
+//        buttonpress++;
+//        IOCAFbits.IOCAF4 = 0;
+//    }  
+    
+    
+    if(IOCAFbits.IOCAF4 == 1 )
     {
-        yourtime1 = tick_count;
-        flag1=1;
-        PIN_MANAGER_IOC();
-        INTCONbits.IOCIF =0;
+        tick_count=0;
+        //x = TMR0;
+        TMR0 = 0;
+        flag1 = 1;
+        //printf(" %i hello" ,x);
+        IOCAFbits.IOCAF4 = 0;
+        INTCONbits.IOCIF = 0;
+        //printf("1");
+//        INTCONbits.IOCIE = 0;
     }
-    if(INTCONbits.INTE ==1 && INTCONbits.INTF == 1)
+    
+    if(INTCONbits.INTE == 1 && INTCONbits.INTF == 1)
     {
         yourtime2 = tick_count;
-        flag2=1;
-        INT_ISR();
-        INTCONbits.INTF=0;
+        x = TMR0;
+        //INT_ISR();
+        INTCONbits.INTF = 0;
+        //INTCONbits.INTE = 0;
+        //buttonpress++;
+        flag2 = 1;
+        //printf("2");
     }
 }
